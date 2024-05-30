@@ -15,7 +15,7 @@ func loadEnv() {
 	
 	// もし err がnilではないなら、"読み込み出来ませんでした"が出力されます。
 	if err != nil {
-		log.Printf("読み込み出来ませんでした: %v", err)
+		log.Fatalf("読み込み出来ませんでした: %v", err)
 	} 
 }
 
