@@ -1,0 +1,4 @@
+__debug_bin*
+/nginx/keys/*
+/data
+.env
