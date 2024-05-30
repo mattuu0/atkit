@@ -10,13 +10,13 @@ import (
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth"
 
-	//" github.com/markbates/goth/providers/google"
+	"github.com/markbates/goth/providers/google"
 	"github.com/markbates/goth/providers/discord"
 )
 
 func Oauth_Init() {
 	goth.UseProviders(
-		//google.New(os.Getenv("GOOGLE_KEY"), os.Getenv("GOOGLE_SECRET"),os.Getenv("GOOGLE_CALLBACK_URL")),
+		google.New(os.Getenv("Google_KEY"), os.Getenv("Google_SECRET"),os.Getenv("Google_CALLBACK_URL"),"email","profile"),
 		discord.New(os.Getenv("DISCORD_KEY"), os.Getenv("DISCORD_SECRET"),os.Getenv("DISCORD_CALLBACK_URL"),"identify","email"),
 	)
 }

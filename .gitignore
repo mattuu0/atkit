@@ -2,3 +2,6 @@ __debug_bin*
 /nginx/keys/*
 /data
 .env
+
+/auth/src/assets/userIcons/*
+!/auth/src/assets/userIcons/default.png
