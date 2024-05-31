@@ -5,3 +5,4 @@ __debug_bin*
 
 /auth/src/assets/userIcons/*
 !/auth/src/assets/userIcons/default.png
+auth/src/test.db

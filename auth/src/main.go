@@ -1,6 +1,7 @@
 package main
 
 import (
+	"auth/oauth"
 	"net/http"
 	"os"
 
@@ -15,7 +16,7 @@ func main() {
 	router := gin.Default()
 
 	//Oauth 設定
-	Oauth_Setup(router)
+	oauth.Oauth_Setup(router)
 
 	router.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{

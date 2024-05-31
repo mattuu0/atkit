@@ -1,6 +1,7 @@
 package main
 
 import (
+	"auth/database"
 	"log"
 
 	"github.com/joho/godotenv"
@@ -21,4 +22,7 @@ func loadEnv() {
 
 func Init() {
 	loadEnv()
+
+	// データベース接続
+	database.Init()
 }

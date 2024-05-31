@@ -1,17 +1,18 @@
-package main
+package oauth
 
 import (
+	"auth/database"
 	"context"
 	"log"
-	"os"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
 
-	"github.com/markbates/goth/providers/google"
 	"github.com/markbates/goth/providers/discord"
+	"github.com/markbates/goth/providers/google"
 )
 
 func Oauth_Init() {
@@ -41,6 +42,7 @@ func Oauth_Setup(router *gin.Engine) {
 
 		//認証を完了するエンドポイント
 		ogroup.GET("/:provider/callback", func(ctx *gin.Context) {
+			//プロバイダ取得
 			provider := ctx.Param("provider")
 			ctx.Request = contextWithProviderName(ctx, provider)
 	
@@ -55,6 +57,17 @@ func Oauth_Setup(router *gin.Engine) {
 				})
 				return
 			}
+
+			database.CreateUser(database.User{
+				UserID: user.UserID,
+				Provider: provider,
+				UserName: user.Name,
+				NickName: user.NickName,
+				Email: user.Email,
+				IconPath: user.AvatarURL,
+				ProviderUID: user.UserID,
+				IsVeriry: false,
+			})
 
 			//ユーザを表示する
 			log.Printf("%#v", user)
