@@ -25,10 +25,20 @@ func Init() {
 	//マイグレーション
 	dbconn.AutoMigrate(
 		&User{},
+		&Session{},
 	)
 
 	//グローバル変数に格納
 	conn = dbconn
 
 	isInit = true
+}
+
+func GetConn() *gorm.DB {
+	//初期化
+	if !isInit {
+		Init()
+	}
+
+	return conn
 }

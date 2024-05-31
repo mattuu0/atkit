@@ -25,3 +25,20 @@ type User struct {
 	//メールアドレスが検証されているか
 	IsVeriry bool `gorm:"default:false"`
 }
+
+type Session struct {
+	//セッションID
+	SessionID string `gorm:"primaryKey"`
+
+	//ユーザーID
+	UserID string
+
+	//トークンID
+	TokenID string
+
+	//UserAgent
+	UserAgent string
+
+	//IPアドレス
+	IPAddress string
+}
