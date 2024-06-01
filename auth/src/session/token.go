@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	//JWT シークレット TODO 実際に使う際は変える
+	//TODO JWT シークレット 実際に使う際は変える
 	secret = "VHz4OnFGuftXGx9FDOA9AMyORaclIGbqi1W8dT6bql7BOkprjRZa4KCay8DqNRYE"
 )
 
