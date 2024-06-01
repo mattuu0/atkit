@@ -2,7 +2,6 @@ package session
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -14,11 +13,11 @@ var (
 )
 
 // トークン生成
-func GenToken(tokenid string) {
+func GenToken(tokenid string) (string,error) {
 	// JWTに付与する構造体
 	claims := jwt.MapClaims{
 		"tokenid": tokenid,
-		"exp":     GetExp(), // 72時間が有効期限
+		"exp":     GetExp(), //有効期限
 	}
 
 	// ヘッダーとペイロード生成
@@ -27,32 +26,33 @@ func GenToken(tokenid string) {
 	// トークンに署名を付与
 	signed_token, err := token.SignedString([]byte(secret))
 
+	// エラー処理
 	if err != nil {
-		log.Println(err)
-		return
+		return "",err
 	}
 
-	log.Println("accessToken:", signed_token)
-
-	VerifyToken(signed_token,)
+	return signed_token,nil
 }
 
-func VerifyToken(tokenString string) bool {
+func VerifyToken(tokenString string) (string,error) {
+	//トークンを検証する
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
+		//検証出来たら鍵を返す
 		return []byte(secret), nil
 	})
 
+	//トークンが認証されているか確認
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		log.Println(claims["tokenid"])
+		//トークンIDを返す
+		return claims["tokenid"].(string),nil
 	} else {
-		fmt.Println(err)
+		//エラーを返す
+		return "",err
 	}
-
-	return false
 }
 
 func GetExp() int64 {

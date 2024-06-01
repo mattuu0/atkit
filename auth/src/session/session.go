@@ -7,9 +7,21 @@ func Init() {
 	database.Init()
 }
 
+//セッションを作成する (トークンを返す)
 func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
 	//データベース接続
 	dbconn := database.GetConn()
+
+	//トークンID生成
+	tokenid := GenID()
+
+	//トークン取得
+	stoken,err := GenToken(tokenid)
+
+	//エラー処理
+	if err != nil {
+		return "",err
+	}
 
 	//セッションID取得
 	SessionID := GenID()
@@ -18,9 +30,10 @@ func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
 	session_data := database.Session{
 		SessionID: SessionID,
 		UserID: bindid,
-		TokenID: "",
+		TokenID: tokenid,
 		UserAgent: useragent,
 		IPAddress: ipaddr,
+		IsUpdate: false,
 	}
 
 	//セッション作成
@@ -31,5 +44,42 @@ func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
 		return "",result.Error
 	}
 
-	return "",nil
+	return stoken,nil
+}
+
+//セッションを更新する
+func UpdateSession(tokenid string) error {
+	//データベース接続
+	dbconn := database.GetConn()
+
+	//セッション取得
+	session,err := GetSessionByTokenID(tokenid)
+
+	//エラー処理
+	if err != nil {
+		return err
+	}
+
+	
+}
+
+//セッション取得
+func GetSessionByTokenID(tokenid string) (*database.Session,error) {
+	//データベース接続
+	dbconn := database.GetConn()
+
+	//セッション取得
+	var session database.Session
+
+	//セッション取得
+	result := dbconn.Where(database.Session{
+		TokenID: tokenid,
+	}).First(&session)
+
+	//エラー処理
+	if result.Error != nil {
+		return nil,result.Error
+	}
+
+	return &session,nil
 }

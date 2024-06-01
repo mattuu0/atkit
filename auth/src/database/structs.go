@@ -15,4 +15,7 @@ type Session struct {
 
 	//IPアドレス
 	IPAddress string
+
+	//更新中か否
+	IsUpdate bool
 }
