@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
+	"gorm.io/gorm"
 
 	"github.com/markbates/goth/providers/discord"
 	"github.com/markbates/goth/providers/google"
@@ -58,19 +59,31 @@ func Oauth_Setup(router *gin.Engine) {
 				return
 			}
 
-			database.CreateUser(database.User{
-				UserID: user.UserID,
-				Provider: provider,
-				UserName: user.Name,
-				NickName: user.NickName,
-				Email: user.Email,
-				IconPath: user.AvatarURL,
-				ProviderUID: user.UserID,
-				IsVeriry: false,
-			})
+			//ユーザーを取得する
+			usr,err := database.GetUser(user.Provider, user.UserID)
 
-			//ユーザを表示する
-			log.Printf("%#v", user)
+			if err == gorm.ErrRecordNotFound {
+				//見つからないときユーザーを作成する
+				database.CreateUser(database.User{
+					UserID: user.UserID,
+					Provider: user.Provider,
+					UserName: user.Name,
+					NickName: user.NickName,
+					Email: user.Email,
+					IconPath: user.AvatarURL,
+					ProviderUID: user.UserID,
+					IsVeriry: false,
+				})
+			} else if err != nil {
+				//エラー処理
+				ctx.HTML(http.StatusInternalServerError,"oauth_error.html",gin.H{
+					"error_log" : err.Error(),
+				})
+				return
+			} else {
+				//見つかったとき
+				log.Println(usr)
+			}
 		})
 	}
 }
