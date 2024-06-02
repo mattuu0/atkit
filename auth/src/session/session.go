@@ -1,6 +1,9 @@
 package session
 
-import "auth/database"
+import (
+	"auth/database"
+	"errors"
+)
 
 func Init() {
 	//データベース接続
@@ -47,8 +50,9 @@ func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
 	return stoken,nil
 }
 
+//更新用のトークンを返す
 //セッションを更新する
-func UpdateSession(tokenid string) error {
+func UpdateSession(tokenid string) (string,error) {
 	//データベース接続
 	dbconn := database.GetConn()
 
@@ -57,10 +61,13 @@ func UpdateSession(tokenid string) error {
 
 	//エラー処理
 	if err != nil {
-		return err
+		return "",err
 	}
 
-	
+	//更新中の場合
+	if (session.IsUpdate) {
+		return errors.New("session is updating")
+	}
 }
 
 //セッション取得
