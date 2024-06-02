@@ -21,10 +21,10 @@ func GenToken(tokenid string) (string,error) {
 	}
 
 	// ヘッダーとペイロード生成
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 
 	// トークンに署名を付与
-	signed_token, err := token.SignedString([]byte(secret))
+	signed_token, err := token.SignedString(priv_key)
 
 	// エラー処理
 	if err != nil {
@@ -37,12 +37,12 @@ func GenToken(tokenid string) (string,error) {
 func VerifyToken(tokenString string) (string,error) {
 	//トークンを検証する
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
 		//検証出来たら鍵を返す
-		return []byte(secret), nil
+		return pub_key, nil
 	})
 
 	//トークンが認証されているか確認

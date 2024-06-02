@@ -18,4 +18,7 @@ type Session struct {
 
 	//更新中か否
 	IsUpdate bool
+
+	//タイプ
+	Type string	`gorm:"default:access"`
 }

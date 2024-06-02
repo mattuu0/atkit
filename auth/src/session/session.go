@@ -2,12 +2,35 @@ package session
 
 import (
 	"auth/database"
+	"crypto/ed25519"
 	"errors"
+	"log"
+)
+
+var (
+	//秘密鍵
+	priv_key ed25519.PrivateKey = nil
+
+	//公開鍵
+	pub_key ed25519.PublicKey = nil
 )
 
 func Init() {
 	//データベース接続
 	database.Init()
+
+	//秘密鍵と公開鍵を生成
+	gen_priv,gen_pub, err := GenKey("ed25519","ed25519.pub")
+
+	//エラー処理
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	//グローバル変数に格納
+	priv_key = gen_priv
+	pub_key = gen_pub
 }
 
 //セッションを作成する (トークンを返す)
@@ -54,7 +77,7 @@ func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
 //セッションを更新する
 func UpdateSession(tokenid string) (string,error) {
 	//データベース接続
-	dbconn := database.GetConn()
+	//dbconn := database.GetConn()
 
 	//セッション取得
 	session,err := GetSessionByTokenID(tokenid)
@@ -66,8 +89,13 @@ func UpdateSession(tokenid string) (string,error) {
 
 	//更新中の場合
 	if (session.IsUpdate) {
-		return errors.New("session is updating")
+		return "",errors.New("session is updating")
 	}
+
+
+	GenToken(session.TokenID)
+
+	return "",nil
 }
 
 //セッション取得
