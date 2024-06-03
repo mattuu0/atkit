@@ -2,8 +2,6 @@ package main
 
 import (
 	"auth/oauth"
-	"auth/session"
-
 	"net/http"
 	"os"
 
@@ -11,12 +9,9 @@ import (
 )
 
 func main() {
-	//初期化
 	Init()
 
-	session.Init()
-	session.GetSession("aiueo", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.142.86 Safari/537.36", "127.0.0.1")
-	//GenerateSaveEd25519("ed25519")
+	ServerMain()
 }
 
 func ServerMain() {

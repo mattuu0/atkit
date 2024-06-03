@@ -7,11 +7,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var (
-	//TODO JWT シークレット 実際に使う際は変える
-	secret = "VHz4OnFGuftXGx9FDOA9AMyORaclIGbqi1W8dT6bql7BOkprjRZa4KCay8DqNRYE"
-)
-
 // トークン生成
 func GenToken(tokenid string) (string,error) {
 	// JWTに付与する構造体

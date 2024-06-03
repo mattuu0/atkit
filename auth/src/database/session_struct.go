@@ -17,7 +17,10 @@ type Session struct {
 	IPAddress string
 
 	//更新中か否
-	IsUpdate bool
+	IsUpdating bool
+
+	//アップデートID
+	UpdateID string `gorm:"default:null"`
 
 	//タイプ
 	Type string	`gorm:"default:access"`

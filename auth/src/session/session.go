@@ -59,7 +59,7 @@ func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
 		TokenID: tokenid,
 		UserAgent: useragent,
 		IPAddress: ipaddr,
-		IsUpdate: false,
+		IsUpdating: false,
 	}
 
 	//セッション作成
@@ -75,7 +75,7 @@ func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
 
 //更新用のトークンを返す
 //セッションを更新する
-func UpdateSession(tokenid string) (string,error) {
+func UpdateSession(tokenid string,useragent string,ipaddr string) (string,error) {
 	//データベース接続
 	//dbconn := database.GetConn()
 
@@ -87,15 +87,116 @@ func UpdateSession(tokenid string) (string,error) {
 		return "",err
 	}
 
+	//更新用のセッションの場合
+	if session.Type == "refresh" {
+		return "",errors.New("session is refresh")
+	}
+
 	//更新中の場合
-	if (session.IsUpdate) {
+	if (session.IsUpdating) {
 		return "",errors.New("session is updating")
 	}
 
+	//トークンID生成
+	new_tokenid := GenID()
+	//更新用トークン生成
+	new_token,err := GenToken(new_tokenid)
 
-	GenToken(session.TokenID)
+	//エラー処理
+	if err != nil {
+		return "",err
+	}
 
-	return "",nil
+	//更新用セッション作成
+	//データベース接続
+	dbconn := database.GetConn()
+
+	//セッションID取得
+	SessionID := GenID()
+
+	//セッション作成
+	session_data := database.Session{
+		SessionID: SessionID,
+		UserID: session.UserID,
+		TokenID: new_tokenid,
+		UserAgent: useragent,
+		IPAddress: ipaddr,
+		IsUpdating: false,
+		UpdateID: tokenid,
+		Type: "refresh",
+	}
+
+	//セッション作成
+	result := dbconn.Create(&session_data)
+
+	//エラー処理
+	if result.Error != nil {
+		return "",result.Error
+	}
+
+	//古いセッションを更新中にする
+	session.IsUpdating = true
+
+	//更新する
+	result = dbconn.Save(&session)
+
+	//エラー処理
+	if result.Error != nil {
+		return "",result.Error
+	}
+
+	return new_token,nil
+}
+
+//更新を確定する関数
+func SubmitUpdate(tokenid string,useragent string,ipaddr string) error {
+	//データベース接続
+	dbconn := database.GetConn()
+
+	//新しいセッション取得
+	new_session,err := GetSessionByTokenID(tokenid)
+
+	//エラー処理
+	if err != nil {
+		return err
+	}
+
+	//古いセッション取得
+	old_session,err := GetSessionByTokenID(new_session.UpdateID)
+
+	//エラー処理
+	if err != nil {
+		return err
+	}
+
+	//更新中か
+	if !old_session.IsUpdating {
+		return errors.New("session is not updating")
+	}
+
+	//古いセッションを削除する
+	result := dbconn.Unscoped().Delete(&old_session)
+
+	//エラー処理
+	if result.Error != nil {
+		return result.Error
+	}
+
+	//新しいセッションを更新する
+	new_session.UpdateID = ""
+	new_session.Type = "access"
+	new_session.UserAgent = useragent
+	new_session.IPAddress = ipaddr
+
+	//更新する
+	result = dbconn.Save(&new_session)
+
+	//エラー処理
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }
 
 //セッション取得
