@@ -4,9 +4,14 @@ import (
 	"auth/database"
 	"auth/session"
 	"context"
+	"image"
+	_ "image/png"
+	"io"
 	"log"
 	"net/http"
 	"os"
+
+	"golang.org/x/image/draw"
 
 	"github.com/gin-gonic/gin"
 	"github.com/markbates/goth"
@@ -103,6 +108,12 @@ func Oauth_Setup(router *gin.Engine) {
 				//ユーザーを取得
 				usr = get_usr
 
+				//アイコンのURLが存在するか
+				if user.AvatarURL != "" {
+					//アイコンを保存する
+					SaveIcon(user.AvatarURL, "./assets/UserIcons/" + usr.UserID + ".png")
+				}
+
 			} else if err != nil {
 				//エラー処理
 				ctx.HTML(http.StatusInternalServerError,"oauth_error.html",gin.H{
@@ -137,4 +148,46 @@ func Oauth_Setup(router *gin.Engine) {
 //プロバイダを取得する
 func contextWithProviderName(ctx *gin.Context, provider string) (*http.Request){
     return  ctx.Request.WithContext(context.WithValue(ctx.Request.Context(), "provider", provider))
+}
+
+func SaveIcon(url, path string) error {
+	//リクエストを飛ばす
+    response, err := http.Get(url)
+
+	//エラー処理
+    if err != nil {
+        return err
+    }
+
+    defer response.Body.Close()
+
+	//画像を書き込む
+	file, err := os.Create(path)
+
+	//エラー処理
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	//画像を書き込む
+	_, err = io.Copy(file, response.Body)
+
+	//エラー処理
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ResizeImage(img image.Image, width, height int) image.Image {
+	// 欲しいサイズの画像を新しく作る
+	newImage := image.NewRGBA(image.Rect(0, 0, width, height))
+
+	// サイズを変更しながら画像をコピーする
+	draw.BiLinear.Scale(newImage, newImage.Bounds(), img, img.Bounds(), draw.Over, nil)
+
+	return newImage
 }
