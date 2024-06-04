@@ -75,3 +75,22 @@ func GetUser(provider, uid string) (*User,error) {
 
 	return &user,nil
 }
+
+func GetUserByID(uid string) (*User,error) {
+	//データベース接続
+	dbconn := GetConn()
+
+	var user User
+
+	//ユーザー取得
+	result := dbconn.Where(User{
+		UserID: uid,
+	}).First(&user)
+
+	//エラー処理
+	if result.Error != nil {
+		return nil,result.Error
+	}
+
+	return &user,nil
+}

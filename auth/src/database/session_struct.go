@@ -24,4 +24,7 @@ type Session struct {
 
 	//タイプ
 	Type string	`gorm:"default:access"`
+
+	//有効期限
+	Exp int64 `gorm:"default:-1"`	
 }

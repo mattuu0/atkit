@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"errors"
 	"log"
+	"time"
 )
 
 var (
@@ -13,6 +14,9 @@ var (
 
 	//公開鍵
 	pub_key ed25519.PublicKey = nil
+
+	//無期限
+	noexp int64 = -1
 )
 
 func Init() {
@@ -31,6 +35,45 @@ func Init() {
 	//グローバル変数に格納
 	priv_key = gen_priv
 	pub_key = gen_pub
+
+	go func() {
+		defer recover()
+
+		//セッション削除
+		Remove_Expired_Session()
+	}()
+}
+
+func Remove_Expired_Session() {
+	//データベース接続
+	dbconn := database.GetConn()
+
+	//古いセッション取得
+	for {
+		sessions := []database.Session{}
+
+		//db検索
+		result := dbconn.Where("exp < ? AND exp <> " + string(noexp),time.Now()).Find(sessions)
+
+		//エラー処理
+		if result.Error != nil {
+			log.Println(result.Error)
+			return
+		}
+
+		//古いセッションを削除
+		for _,session := range sessions {
+			log.Println(session.Exp)
+
+			//有効期限が設定されていないとき
+			if session.Exp == noexp {
+				continue
+			}
+
+			//セッション削除
+			dbconn.Unscoped().Delete(&session)
+		}
+	}
 }
 
 //セッションを作成する (トークンを返す)
@@ -114,7 +157,7 @@ func UpdateSession(tokenid string,useragent string,ipaddr string) (string,error)
 	//セッションID取得
 	SessionID := GenID()
 
-	//セッション作成
+	//セッション作成 (有効期限 5分)
 	session_data := database.Session{
 		SessionID: SessionID,
 		UserID: session.UserID,
@@ -124,6 +167,7 @@ func UpdateSession(tokenid string,useragent string,ipaddr string) (string,error)
 		IsUpdating: false,
 		UpdateID: tokenid,
 		Type: "refresh",
+		Exp: time.Now().Add(time.Minute * 5).Unix(),
 	}
 
 	//セッション作成
@@ -187,6 +231,7 @@ func SubmitUpdate(tokenid string,useragent string,ipaddr string) error {
 	new_session.Type = "access"
 	new_session.UserAgent = useragent
 	new_session.IPAddress = ipaddr
+	new_session.Exp = noexp
 
 	//更新する
 	result = dbconn.Save(&new_session)
@@ -218,4 +263,21 @@ func GetSessionByTokenID(tokenid string) (*database.Session,error) {
 	}
 
 	return &session,nil
+}
+
+//セッション削除
+func DeleteSession(sessionid string) error {
+	//データベース接続
+	dbconn := database.GetConn()
+
+	result := dbconn.Where(database.Session{
+		SessionID: sessionid,
+	}).Unscoped().Delete(&database.Session{})
+
+	//エラー処理
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }

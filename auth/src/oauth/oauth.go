@@ -2,6 +2,7 @@ package oauth
 
 import (
 	"auth/database"
+	"auth/session"
 	"context"
 	"log"
 	"net/http"
@@ -21,6 +22,9 @@ func Oauth_Init() {
 		google.New(os.Getenv("Google_KEY"), os.Getenv("Google_SECRET"),os.Getenv("Google_CALLBACK_URL"),"email","profile"),
 		discord.New(os.Getenv("DISCORD_KEY"), os.Getenv("DISCORD_SECRET"),os.Getenv("DISCORD_CALLBACK_URL"),"identify","email"),
 	)
+
+	//セッション初期化
+	session.Init()
 }
 
 func Oauth_Setup(router *gin.Engine) {
@@ -64,7 +68,7 @@ func Oauth_Setup(router *gin.Engine) {
 
 			if err == gorm.ErrRecordNotFound {
 				//見つからないときユーザーを作成する
-				database.CreateUser(database.User{
+				err := database.CreateUser(database.User{
 					UserID: user.UserID,
 					Provider: user.Provider,
 					UserName: user.Name,
@@ -74,6 +78,31 @@ func Oauth_Setup(router *gin.Engine) {
 					ProviderUID: user.UserID,
 					IsVeriry: false,
 				})
+
+				//エラー処理
+				if err != nil {
+					log.Println(ctx.Writer, err)
+					ctx.HTML(http.StatusInternalServerError,"oauth_error.html",gin.H{
+						"error_log" : err.Error(),
+					})
+					return
+				}
+
+				//ユーザーを取得
+				get_usr,err := database.GetUser(user.Provider, user.UserID)
+
+				//エラー処理
+				if err != nil {
+					log.Println(ctx.Writer, err)
+					ctx.HTML(http.StatusInternalServerError,"oauth_error.html",gin.H{
+						"error_log" : err.Error(),
+					})
+					return
+				}
+
+				//ユーザーを取得
+				usr = get_usr
+
 			} else if err != nil {
 				//エラー処理
 				ctx.HTML(http.StatusInternalServerError,"oauth_error.html",gin.H{
@@ -84,6 +113,23 @@ func Oauth_Setup(router *gin.Engine) {
 				//見つかったとき
 				log.Println(usr)
 			}
+
+			//セッションを作成する
+			session_token,err := session.GetSession(usr.UserID, ctx.Request.UserAgent(), ctx.ClientIP())
+
+			//エラー処理
+			if err != nil {
+				log.Println(ctx.Writer, err)
+				ctx.HTML(http.StatusInternalServerError,"oauth_error.html",gin.H{
+					"error_log" : err.Error(),
+				})
+				return
+			}
+
+			//Cookie に設定
+			ctx.SetCookie("session_token", session_token, int(session.GetExp()), "/", "localhost", true, true)
+
+			ctx.Redirect(http.StatusFound, "/statics/index.html")
 		})
 	}
 }
