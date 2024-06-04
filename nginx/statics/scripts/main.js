@@ -42,4 +42,4 @@ updateing_button.addEventListener('pointerdown', () => {
     document.addEventListener('pointerup', () => {        
       clearInterval(intervalId)
     }, { once: true })
-  })
+})

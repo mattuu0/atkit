@@ -17,6 +17,9 @@ var (
 
 	//無期限
 	noexp int64 = -1
+
+	//有効期限
+	refresh_exp int64 = 300
 )
 
 func Init() {
@@ -50,15 +53,18 @@ func Remove_Expired_Session() {
 
 	//古いセッション取得
 	for {
+		//3秒待機
+		time.Sleep(time.Second * 3)
+
 		sessions := []database.Session{}
 
 		//db検索
-		result := dbconn.Where("exp < ? AND exp <> " + string(noexp),time.Now()).Find(sessions)
+		result := dbconn.Where("exp < ? AND exp <> -1",time.Now()).Find(&sessions)
 
 		//エラー処理
 		if result.Error != nil {
 			log.Println(result.Error)
-			return
+			continue
 		}
 
 		//古いセッションを削除
@@ -70,9 +76,31 @@ func Remove_Expired_Session() {
 				continue
 			}
 
+			//更新元セッション取得
+			old_session,err := GetSessionByTokenID(session.UpdateID)
+
+			//エラー処理
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			//更新中を外す
+			old_session.IsUpdating = false
+
+			//更新
+			result := dbconn.Save(&old_session)
+
+			//エラー処理
+			if result.Error != nil {
+				log.Println(result.Error)
+				continue
+			}
+
 			//セッション削除
 			dbconn.Unscoped().Delete(&session)
 		}
+
 	}
 }
 
@@ -167,7 +195,7 @@ func UpdateSession(tokenid string,useragent string,ipaddr string) (string,error)
 		IsUpdating: false,
 		UpdateID: tokenid,
 		Type: "refresh",
-		Exp: time.Now().Add(time.Minute * 5).Unix(),
+		Exp: time.Now().Add(time.Second * time.Duration(refresh_exp)).Unix(),
 	}
 
 	//セッション作成
