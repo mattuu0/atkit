@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"errors"
 	"log"
+	"os"
 	"time"
 )
 
@@ -27,7 +28,7 @@ func Init() {
 	database.Init()
 
 	//秘密鍵と公開鍵を生成
-	gen_priv,gen_pub, err := GenKey("ed25519","ed25519.pub")
+	gen_priv, gen_pub, err := GenKey(os.Getenv("Ed25519_KEY_PATH"), os.Getenv("Ed25519_PUB_PATH"))
 
 	//エラー処理
 	if err != nil {
@@ -59,7 +60,7 @@ func Remove_Expired_Session() {
 		sessions := []database.Session{}
 
 		//db検索
-		result := dbconn.Where("exp < ? AND exp <> -1",time.Now()).Find(&sessions)
+		result := dbconn.Where("exp < ? AND exp <> -1", time.Now()).Find(&sessions)
 
 		//エラー処理
 		if result.Error != nil {
@@ -68,7 +69,7 @@ func Remove_Expired_Session() {
 		}
 
 		//古いセッションを削除
-		for _,session := range sessions {
+		for _, session := range sessions {
 			log.Println(session.Exp)
 
 			//有効期限が設定されていないとき
@@ -77,35 +78,42 @@ func Remove_Expired_Session() {
 			}
 
 			//更新元セッション取得
-			old_session,err := GetSessionByTokenID(session.UpdateID)
+			old_session, err := GetSessionByTokenID(session.UpdateID)
 
 			//エラー処理
-			if err != nil {
+			if err == nil {
 				log.Println(err)
-				continue
+
+				//更新中を外す
+				old_session.IsUpdating = false
+
+				//更新
+				result := dbconn.Save(&old_session)
+
+				//エラー処理
+				if result.Error != nil {
+					log.Println(result.Error)
+					continue
+				}
+			} else if err != nil {
+				log.Println(err)
 			}
 
-			//更新中を外す
-			old_session.IsUpdating = false
-
-			//更新
-			result := dbconn.Save(&old_session)
+			//セッション削除
+			result = dbconn.Unscoped().Delete(&session)
 
 			//エラー処理
 			if result.Error != nil {
 				log.Println(result.Error)
 				continue
 			}
-
-			//セッション削除
-			dbconn.Unscoped().Delete(&session)
 		}
 
 	}
 }
 
-//セッションを作成する (トークンを返す)
-func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
+// セッションを作成する (トークンを返す)
+func GetSession(bindid string, useragent string, ipaddr string) (string, error) {
 	//データベース接続
 	dbconn := database.GetConn()
 
@@ -113,11 +121,11 @@ func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
 	tokenid := GenID()
 
 	//トークン取得
-	stoken,err := GenToken(tokenid)
+	stoken, err := GenToken(tokenid)
 
 	//エラー処理
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
 	//セッションID取得
@@ -125,11 +133,11 @@ func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
 
 	//セッション作成
 	session_data := database.Session{
-		SessionID: SessionID,
-		UserID: bindid,
-		TokenID: tokenid,
-		UserAgent: useragent,
-		IPAddress: ipaddr,
+		SessionID:  SessionID,
+		UserID:     bindid,
+		TokenID:    tokenid,
+		UserAgent:  useragent,
+		IPAddress:  ipaddr,
 		IsUpdating: false,
 	}
 
@@ -138,44 +146,44 @@ func GetSession(bindid string,useragent string,ipaddr string) (string,error) {
 
 	//エラー処理
 	if result.Error != nil {
-		return "",result.Error
+		return "", result.Error
 	}
 
-	return stoken,nil
+	return stoken, nil
 }
 
-//更新用のトークンを返す
-//セッションを更新する
-func UpdateSession(tokenid string,useragent string,ipaddr string) (string,error) {
+// 更新用のトークンを返す
+// セッションを更新する
+func UpdateSession(tokenid string, useragent string, ipaddr string) (string, error) {
 	//データベース接続
 	//dbconn := database.GetConn()
 
 	//セッション取得
-	session,err := GetSessionByTokenID(tokenid)
+	session, err := GetSessionByTokenID(tokenid)
 
 	//エラー処理
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
 	//更新用のセッションの場合
 	if session.Type == "refresh" {
-		return "",errors.New("session is refresh")
+		return "", errors.New("session is refresh")
 	}
 
 	//更新中の場合
-	if (session.IsUpdating) {
-		return "",errors.New("session is updating")
+	if session.IsUpdating {
+		return "", errors.New("session is updating")
 	}
 
 	//トークンID生成
 	new_tokenid := GenID()
 	//更新用トークン生成
-	new_token,err := GenToken(new_tokenid)
+	new_token, err := GenToken(new_tokenid)
 
 	//エラー処理
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
 	//更新用セッション作成
@@ -187,15 +195,15 @@ func UpdateSession(tokenid string,useragent string,ipaddr string) (string,error)
 
 	//セッション作成 (有効期限 5分)
 	session_data := database.Session{
-		SessionID: SessionID,
-		UserID: session.UserID,
-		TokenID: new_tokenid,
-		UserAgent: useragent,
-		IPAddress: ipaddr,
+		SessionID:  SessionID,
+		UserID:     session.UserID,
+		TokenID:    new_tokenid,
+		UserAgent:  useragent,
+		IPAddress:  ipaddr,
 		IsUpdating: false,
-		UpdateID: tokenid,
-		Type: "refresh",
-		Exp: time.Now().Add(time.Second * time.Duration(refresh_exp)).Unix(),
+		UpdateID:   tokenid,
+		Type:       "refresh",
+		Exp:        time.Now().Add(time.Second * time.Duration(refresh_exp)).Unix(),
 	}
 
 	//セッション作成
@@ -203,7 +211,7 @@ func UpdateSession(tokenid string,useragent string,ipaddr string) (string,error)
 
 	//エラー処理
 	if result.Error != nil {
-		return "",result.Error
+		return "", result.Error
 	}
 
 	//古いセッションを更新中にする
@@ -214,19 +222,19 @@ func UpdateSession(tokenid string,useragent string,ipaddr string) (string,error)
 
 	//エラー処理
 	if result.Error != nil {
-		return "",result.Error
+		return "", result.Error
 	}
 
-	return new_token,nil
+	return new_token, nil
 }
 
-//更新を確定する関数
-func SubmitUpdate(tokenid string,useragent string,ipaddr string) error {
+// 更新を確定する関数
+func SubmitUpdate(tokenid string, useragent string, ipaddr string) error {
 	//データベース接続
 	dbconn := database.GetConn()
 
 	//新しいセッション取得
-	new_session,err := GetSessionByTokenID(tokenid)
+	new_session, err := GetSessionByTokenID(tokenid)
 
 	//エラー処理
 	if err != nil {
@@ -234,7 +242,7 @@ func SubmitUpdate(tokenid string,useragent string,ipaddr string) error {
 	}
 
 	//古いセッション取得
-	old_session,err := GetSessionByTokenID(new_session.UpdateID)
+	old_session, err := GetSessionByTokenID(new_session.UpdateID)
 
 	//エラー処理
 	if err != nil {
@@ -272,8 +280,8 @@ func SubmitUpdate(tokenid string,useragent string,ipaddr string) error {
 	return nil
 }
 
-//セッション取得
-func GetSessionByTokenID(tokenid string) (*database.Session,error) {
+// セッション取得
+func GetSessionByTokenID(tokenid string) (*database.Session, error) {
 	//データベース接続
 	dbconn := database.GetConn()
 
@@ -287,13 +295,13 @@ func GetSessionByTokenID(tokenid string) (*database.Session,error) {
 
 	//エラー処理
 	if result.Error != nil {
-		return nil,result.Error
+		return nil, result.Error
 	}
 
-	return &session,nil
+	return &session, nil
 }
 
-//セッション削除
+// セッション削除
 func DeleteSession(sessionid string) error {
 	//データベース接続
 	dbconn := database.GetConn()

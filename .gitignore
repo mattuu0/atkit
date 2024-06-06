@@ -3,6 +3,6 @@ __debug_bin*
 /data
 .env
 
-/auth/src/assets/userIcons/*
+/auth/src/assets/UserIcons
 !/auth/src/assets/userIcons/default.png
 auth/src/test.db
