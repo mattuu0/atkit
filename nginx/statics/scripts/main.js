@@ -1,39 +1,7 @@
 const usericon = document.getElementById("usericon");
 
-async function main() {
-    const req = await fetch('/auth/authed/GetUser')
-
-    const res = await req.json()
-    console.log(res)
-
-    usericon.src = "/auth/uicon/" + res["UserID"] + "?nowtime=" + new Date().getTime();
-}
-
-main();
-
-async function Logout() {
-    const req = await fetch('/auth/authed/Logout',{
-        method: 'POST',
-    })
-
-    const res = await req.json()
-    console.log(res)
-}
-
-async function Update() {
-    const req = await fetch('/auth/authed/Update',{
-        method: 'POST',
-    })
-
-    const res = await req.json()
-    console.log(res)
-
-    const submit_reqq = await fetch('/auth/authed/SubmitUpdate',{
-        method: 'POST',
-    })
-
-    const submit_res = await submit_reqq.json()
-    console.log(submit_res)
+async function SetIcon(userid) {
+    usericon.src = await GetIcon(userid) + "?nowtime=" + new Date().getTime();
 }
 
 const updateing_button = document.getElementById("updateing_button");
@@ -51,16 +19,50 @@ updateing_button.addEventListener('pointerdown', () => {
 const uicon_upload = document.getElementById("uicon_upload");
 
 uicon_upload.addEventListener('change',async () => {
-    const ufile = uicon_upload.files[0];
+    UploadIcon(uicon_upload.files[0]);
+});
 
-    const updata = new FormData();
-    updata.append("icon",ufile);
+var access_token = "";
 
-    const req = await fetch("/auth/uicon/upicon",{
-        method: 'POST',
-        body: updata
+async function AccessToken() {
+    const token = await GetToken();
+
+    if (token == null) {
+        return;
+    }
+
+    access_token = token;
+}
+
+async function AuthTest() {
+    const req = await fetch("/app/authed", {
+        headers: {
+            "Authorization": "Bearer " + access_token
+        },
+        method: "POST"
     })
 
-    const res = await req.json()
-    console.log(res)
-});
+    //失敗したとき
+    if (req.status != 200) {
+        return;
+    }
+
+    const res = await req.json();
+
+    console.log(res);
+}   
+
+async function main() {
+    const user = await GetUser();
+
+    //失敗したとき
+    if (user == null) {
+        return;
+    }
+
+    console.log(user);
+
+    SetIcon(user["UserID"]);
+}
+
+main();

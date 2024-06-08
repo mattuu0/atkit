@@ -12,7 +12,10 @@ require (
 	gorm.io/gorm v1.25.10
 )
 
-require github.com/markbates/going v1.0.0 // indirect
+require (
+	github.com/alexander-melentyev/gin-nocache v1.0.2 // indirect
+	github.com/markbates/going v1.0.0 // indirect
+)
 
 require (
 	cloud.google.com/go/compute v1.20.1 // indirect

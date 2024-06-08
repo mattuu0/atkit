@@ -1,10 +1,9 @@
 package main
 
 import (
-	"auth/auth"
-	"auth/database"
-	"auth/session"
+	authsdk "atkit/auth_sdk"
 	"log"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -23,14 +22,15 @@ func loadEnv() {
 }
 
 func Init() {
+	//env よみこみ　
 	loadEnv()
 
-	// データベース接続
-	database.Init()
+	//認証SDK初期化
+	err := authsdk.Init(os.Getenv("PUB_KEY_PATH"))
 
-	// セッション初期化
-	session.Init()
-
-	//JWt 初期化
-	auth.Init()
+	//エラー処理
+	if err != nil {
+		log.Println(err)
+		log.Fatalln("cannot init auth sdk")
+	}
 }

@@ -9,3 +9,4 @@ __debug_bin*
 
 auth/src/keys/*
 !/auth/src/keys/readme.md
+app/src/ed25519.pub

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"auth/auth"
 	"auth/database"
 	"auth/oauth"
 	"auth/session"
@@ -10,6 +11,8 @@ import (
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+
+	nocache "github.com/alexander-melentyev/gin-nocache"
 )
 
 func main() {
@@ -19,7 +22,6 @@ func main() {
 }
 
 func ServerMain() {
-
 	//ルーター設定
 	router := gin.Default()
 
@@ -110,11 +112,23 @@ func ServerMain() {
 		})
 
 		//アクセストークン作成
-		authed_group.GET("/GenToken", func(ctx *gin.Context) {
+		authed_group.GET("/GenToken",nocache.NoCache(), func(ctx *gin.Context) {
 			//ユーザー取得
+			user,_ := ctx.Get("user")
+
+			//トークン作成
+			atoken,err := auth.GenAccessToken(user.(database.User).UserID)
+
+			//エラー処理
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
 
 			ctx.JSON(http.StatusOK, gin.H{
-				"token": ctx.MustGet("session").(*database.Session).TokenID,
+				"token": atoken,
 			})
 		})
 	}
