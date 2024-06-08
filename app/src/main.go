@@ -2,6 +2,7 @@ package main
 
 import (
 	authsdk "atkit/auth_sdk"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,17 @@ func main() {
 	})
 
 	router.POST("/authed", authsdk.AuthMiddleware(), func(ctx *gin.Context) {
+		userid := ctx.GetString("userid")
+
+		if userid == "" {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"message": "auth failed",
+			})
+			return
+		}
+
+		log.Println("userid: " + userid)
+
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "auth success",
 		})
