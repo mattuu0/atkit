@@ -43,3 +43,20 @@ updateing_button.addEventListener('pointerdown', () => {
       clearInterval(intervalId)
     }, { once: true })
 })
+
+const uicon_upload = document.getElementById("uicon_upload");
+
+uicon_upload.addEventListener('change',async () => {
+    const ufile = uicon_upload.files[0];
+
+    const updata = new FormData();
+    updata.append("icon",ufile);
+
+    const req = await fetch("/auth/uicon/upicon",{
+        method: 'POST',
+        body: updata
+    })
+
+    const res = await req.json()
+    console.log(res)
+});

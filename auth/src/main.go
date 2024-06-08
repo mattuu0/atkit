@@ -4,8 +4,10 @@ import (
 	"auth/database"
 	"auth/oauth"
 	"auth/session"
+	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 )
@@ -62,6 +64,7 @@ func ServerMain() {
 			})
 		})
 
+		//更新を開始するエンドポイント	
 		authed_group.POST("/Update", func(ctx *gin.Context) {
 			//セッション取得
 			now_session,_ := ctx.Get("session")
@@ -85,6 +88,7 @@ func ServerMain() {
 			})
 		})
 
+		//更新を確定するエンドポイント
 		authed_group.POST("/SubmitUpdate", func(ctx *gin.Context) {
 			//セッション取得
 			now_session,_ := ctx.Get("session")
@@ -104,8 +108,95 @@ func ServerMain() {
 				"success": true,
 			})
 		})
+	}
 
-		
+	//アイコングループ
+	uicon_group := router.Group("/uicon")
+	{
+		//アイコンを取得するエンドポイント
+		uicon_group.GET("/:userid",func(ctx *gin.Context) {
+			//ユーザー取得
+			user,err := database.GetUserByID(ctx.Param("userid"))
+	
+			//エラー処理
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
+	
+			//画像を読み込む
+			ctx.File(user.IconPath)
+		})
+
+		//アイコンを更新するエンドポイント
+		uicon_group.POST("/upicon",Middleware(),func(ctx *gin.Context) {
+			//ユーザー取得
+			user,_ := ctx.MustGet("user").(database.User)
+
+			//アイコン取得
+			icon_file, err := ctx.FormFile("icon")
+			if err != nil {
+				log.Println(err)
+
+				ctx.HTML(http.StatusBadRequest, "oauth/oauth_error.html", gin.H{
+					"error_log": err.Error(),
+				})
+				return
+			}
+
+			//ファイルパス指定
+			savepath := filepath.Join("./assets/UserIcons",user.UserID + ".png")
+
+			//アイコンファイルを開く
+			ofile,err := icon_file.Open()
+
+			//エラー処理
+			if err != nil {
+				log.Println(err)
+
+				ctx.HTML(http.StatusBadRequest, "oauth/oauth_error.html", gin.H{
+					"error_log": err.Error(),
+				})
+				return
+			}
+
+			//アイコンファイルを保存
+			err = oauth.Resizeio(ofile,savepath)
+
+			//エラー処理
+			if err != nil {
+				log.Println(err)
+
+				ctx.HTML(http.StatusBadRequest, "oauth/oauth_error.html", gin.H{
+					"error_log": err.Error(),
+				})
+				return
+			}
+
+			//データーベース
+			dbconn := database.GetConn()
+
+			//ユーザーを取得
+			user.IconPath = savepath
+			
+			//ユーザー更新
+			result := dbconn.Save(&user)
+
+			//エラー処理
+			if result.Error != nil {
+				log.Println(result.Error)
+				ctx.HTML(http.StatusBadRequest, "oauth/oauth_error.html", gin.H{
+					"error_log": result.Error.Error(),
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"success": true,
+			})
+		})
 	}
 
 	router.Run(os.Getenv("BindAddr")) // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")

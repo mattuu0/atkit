@@ -15,12 +15,14 @@ import (
 
 	"github.com/markbates/goth/providers/discord"
 	"github.com/markbates/goth/providers/google"
+	"github.com/markbates/goth/providers/microsoftonline"
 )
 
 func Oauth_Init() {
 	goth.UseProviders(
 		google.New(os.Getenv("Google_KEY"), os.Getenv("Google_SECRET"), os.Getenv("Google_CALLBACK_URL"), "email", "profile"),
 		discord.New(os.Getenv("DISCORD_KEY"), os.Getenv("DISCORD_SECRET"), os.Getenv("DISCORD_CALLBACK_URL"), "identify", "email"),
+		microsoftonline.New(os.Getenv("Microsoft_KEY"), os.Getenv("Microsoft_SECRET"), os.Getenv("Microsoft_CALLBACK_URL"), "openid", "profile", "email"),
 	)
 
 	//セッション初期化

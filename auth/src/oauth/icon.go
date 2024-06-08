@@ -2,10 +2,11 @@ package oauth
 
 import (
 	"image"
+	_ "image/gif"
+	_ "image/jpeg"
 	"image/png"
 	_ "image/png"
-	_ "image/jpeg"
-	_ "image/gif"
+	"io"
 
 	"net/http"
 	"os"
@@ -13,18 +14,9 @@ import (
 	"golang.org/x/image/draw"
 )
 
-func SaveIcon(url, path string) error {
-	//リクエストを飛ばす
-    response, err := http.Get(url)
 
-	//エラー処理
-    if err != nil {
-        return err
-    }
-
-    defer response.Body.Close()
-
-	//画像を書き込む
+func Resizeio(iofile io.Reader,path string) error {
+	//画像を開く
 	file, err := os.Create(path)
 
 	//エラー処理
@@ -36,7 +28,7 @@ func SaveIcon(url, path string) error {
 
 	//画像をリサイズする
 	//画像を読み込む
-	img, _, err := image.Decode(response.Body)
+	img, _, err := image.Decode(iofile)
 
 	//エラー処理
 	if err != nil {
@@ -55,6 +47,22 @@ func SaveIcon(url, path string) error {
 	}
 
 	return nil
+}
+
+
+func SaveIcon(url, path string) error {
+	//リクエストを飛ばす
+    response, err := http.Get(url)
+
+	//エラー処理
+    if err != nil {
+        return err
+    }
+
+    defer response.Body.Close()
+
+	//リサイズして保存
+	return Resizeio(response.Body, path)
 }
 
 func ResizeImage(img image.Image, width, height int) image.Image {

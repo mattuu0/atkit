@@ -12,6 +12,8 @@ require (
 	gorm.io/gorm v1.25.10
 )
 
+require github.com/markbates/going v1.0.0 // indirect
+
 require (
 	cloud.google.com/go/compute v1.20.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
