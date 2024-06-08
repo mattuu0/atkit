@@ -2,9 +2,10 @@ __debug_bin*
 /nginx/keys/*
 /data
 .env
+/auth/src/test.db
 
 /auth/src/assets/UserIcons
 !/auth/src/assets/userIcons/default.png
-auth/src/test.db
+
 auth/src/keys/*
 !/auth/src/keys/readme.md
