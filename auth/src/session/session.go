@@ -59,7 +59,6 @@ func Remove_Expired_Session() {
 
 		sessions := []database.Session{}
 
-		log.Println("now time : ",time.Now().Unix())
 		//db検索
 		result := dbconn.Where("exp < ?", time.Now().Unix()).Find(&sessions)
 
