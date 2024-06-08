@@ -1,8 +1,12 @@
+const usericon = document.getElementById("usericon");
+
 async function main() {
     const req = await fetch('/auth/authed/GetUser')
 
     const res = await req.json()
     console.log(res)
+
+    usericon.src = "/auth/uicon/" + res["UserID"] + "?nowtime=" + new Date().getTime();
 }
 
 main();

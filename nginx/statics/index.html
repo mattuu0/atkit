@@ -1,19 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
+
 <body>
     <h1>hello world</h1>
-    <a href="/auth/oauth/discord">discord</a>
-    <a href="/auth/oauth/microsoftonline">microsoft</a>
-    <button onclick="Update()" id="updateing_button">更新</button>
-    <button onclick="Logout()">ログアウト</button>
-    
-    <input type="file" name="" id="uicon_upload" accept="image/*">
+    <div style="display: flex;">
+        <a href="/auth/oauth/discord" style="margin: 10px;">discord</a>
+        <a href="/auth/oauth/microsoftonline" style="margin: 10px;">microsoft</a>
+        <button onclick="Update()" id="updateing_button" style="margin: 10px;">更新</button>
+        <button onclick="Logout()" style="margin: 10px;">ログアウト</button>
+
+        <input type="file" name="" id="uicon_upload" accept="image/*">
+    </div>
+
+    <img src="" id="usericon" width="256px" alt="">
 
     <script src="./scripts/main.js"></script>
 </body>
+
 </html>
