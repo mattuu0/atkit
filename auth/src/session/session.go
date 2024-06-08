@@ -2,7 +2,6 @@ package session
 
 import (
 	"auth/database"
-	"crypto/ed25519"
 	"errors"
 	"log"
 	"os"
@@ -10,12 +9,8 @@ import (
 )
 
 var (
-	//秘密鍵
-	priv_key ed25519.PrivateKey = nil
-
-	//公開鍵
-	pub_key ed25519.PublicKey = nil
-
+	//JWT 鍵
+	JwtSecret string = ""
 	//無期限
 	noexp int64 = -1
 
@@ -27,19 +22,10 @@ func Init() {
 	//データベース接続
 	database.Init()
 
-	//秘密鍵と公開鍵を生成
-	gen_priv, gen_pub, err := GenKey(os.Getenv("Ed25519_KEY_PATH"), os.Getenv("Ed25519_PUB_PATH"))
+	//JWT鍵の読み込み
+	JwtSecret = os.Getenv("JWT_SECRET")
 
-	//エラー処理
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	//グローバル変数に格納
-	priv_key = gen_priv
-	pub_key = gen_pub
-
+	//有効期限切れセッションを削除する関数
 	go func() {
 		defer recover()
 

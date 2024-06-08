@@ -108,6 +108,15 @@ func ServerMain() {
 				"success": true,
 			})
 		})
+
+		//アクセストークン作成
+		authed_group.GET("/GenToken", func(ctx *gin.Context) {
+			//ユーザー取得
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"token": ctx.MustGet("session").(*database.Session).TokenID,
+			})
+		})
 	}
 
 	//アイコングループ
