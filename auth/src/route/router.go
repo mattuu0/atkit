@@ -51,7 +51,7 @@ func GenRouter() *gin.Engine {
 		uicon_group.GET("/:userid",controller.GetIcon)
 
 		//アイコンを更新するエンドポイント
-		uicon_group.POST("/upicon",middleware.Auth_Middleware(),)
+		uicon_group.POST("/upicon",middleware.Auth_Middleware(),controller.UploadIcon)
 	}
 
 	return router
