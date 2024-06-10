@@ -1,4 +1,4 @@
-package session
+package util
 
 import "github.com/google/uuid"
 

@@ -2,123 +2,15 @@ package session
 
 import (
 	"auth/model"
+	"auth/util"
 	"errors"
-	"log"
-	"os"
 	"time"
 )
-
-var (
-	//JWT 鍵
-	JwtSecret string = ""
-	//無期限
-	noexp int64 = -1
-
-	//更新用トークン有効期限 (5分)
-	refresh_exp int64 = 300
-)
-
-func Init() {
-	//データベース接続
-	model.Init()
-
-	//JWT鍵の読み込み
-	JwtSecret = os.Getenv("JWT_SECRET")
-
-	//有効期限切れセッションを削除する関数
-	go func() {
-		defer recover()
-
-		//セッション削除
-		Remove_Expired_Session()
-	}()
-}
-
-func Remove_Expired_Session() {
-	//古いセッション取得
-	for {
-		//3秒待機
-		time.Sleep(time.Second * 3)
-
-		//古いセッションを取得
-		sessions, err := model.GetExperiedSession(noexp)
-
-		//エラー処理
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		
-
-		//古いセッションを削除
-		for _, session := range sessions {
-			//有効期限が設定されていないとき
-			if session.Exp == noexp {
-				continue
-			}
-
-			//アクセストークンの場合
-			if session.Type == "access" {
-				//セッション取得
-				get_session, err := model.GetSessionByTokenID(session.UpdateID)
-
-				//エラー処理
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-
-				//セッション削除
-				err = model.DeleteSession(get_session.SessionID)
-
-				//エラー処理
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-
-				continue
-			}
-
-			//更新元セッション取得
-			old_session, err := model.GetSessionByTokenID(session.UpdateID)
-
-			//エラー処理
-			if err == nil {
-				log.Println(err)
-
-				//更新中を外す
-				old_session.IsUpdating = false
-
-				//更新
-				err := model.UpdateSession(old_session)
-
-				//エラー処理
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-
-			} else {
-				log.Println(err)
-			}
-
-			//セッション削除
-			err = model.DeleteSession(session.SessionID)
-
-			//エラー処理
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-		}
-	}
-}
 
 // セッションを作成する (トークンを返す)
 func GenSession(bindid string, useragent string, ipaddr string) (string, error) {
 	//トークンID生成
-	tokenid := GenID()
+	tokenid := util.GenID()
 
 	//トークン取得
 	stoken, err := GenToken(tokenid)
@@ -129,7 +21,7 @@ func GenSession(bindid string, useragent string, ipaddr string) (string, error) 
 	}
 
 	//セッションID取得
-	SessionID := GenID()
+	SessionID := util.GenID()
 
 	//セッション作成
 	session_data := model.Session{
@@ -139,7 +31,7 @@ func GenSession(bindid string, useragent string, ipaddr string) (string, error) 
 		UserAgent:  useragent,
 		IPAddress:  ipaddr,
 		IsUpdating: false,
-		Exp:        GetExp(),
+		Exp:        util.GetExp(),
 	}
 
 	//セッション作成
@@ -157,7 +49,7 @@ func GenSession(bindid string, useragent string, ipaddr string) (string, error) 
 // セッションを更新する
 func UpdateSession(tokenid string, useragent string, ipaddr string) (string, error) {
 	//セッション取得
-	session, err := model.GetSessionByTokenID(tokenid)
+	get_session, err := model.GetSessionByTokenID(tokenid)
 
 	//エラー処理
 	if err != nil {
@@ -165,17 +57,17 @@ func UpdateSession(tokenid string, useragent string, ipaddr string) (string, err
 	}
 
 	//更新用のセッションの場合
-	if session.Type == "refresh" {
+	if get_session.Type == "refresh" {
 		return "", errors.New("session is refresh")
 	}
 
 	//更新中の場合
-	if session.IsUpdating {
+	if get_session.IsUpdating {
 		return "", errors.New("session is updating")
 	}
 
 	//トークンID生成
-	new_tokenid := GenID()
+	new_tokenid := util.GenID()
 	//更新用トークン生成
 	new_token, err := GenToken(new_tokenid)
 
@@ -186,12 +78,12 @@ func UpdateSession(tokenid string, useragent string, ipaddr string) (string, err
 
 	//更新用セッション作成
 	//セッションID取得
-	SessionID := GenID()
+	SessionID := util.GenID()
 
 	//セッション作成 (有効期限 5分)
 	session_data := model.Session{
 		SessionID:  SessionID,
-		UserID:     session.UserID,
+		UserID:     get_session.UserID,
 		TokenID:    new_tokenid,
 		UserAgent:  useragent,
 		IPAddress:  ipaddr,
@@ -210,10 +102,10 @@ func UpdateSession(tokenid string, useragent string, ipaddr string) (string, err
 	}
 
 	//古いセッションを更新中にする
-	session.IsUpdating = true
+	get_session.IsUpdating = true
 
 	//更新する
-	err = model.UpdateSession(session)
+	err = model.UpdateSession(get_session)
 
 	//エラー処理
 	if err != nil {
@@ -259,7 +151,7 @@ func SubmitUpdate(tokenid string, useragent string, ipaddr string) error {
 	new_session.Type = "access"
 	new_session.UserAgent = useragent
 	new_session.IPAddress = ipaddr
-	new_session.Exp = GetExp()
+	new_session.Exp = util.GetExp()
 
 	//更新する
 	err = model.UpdateSession(new_session)

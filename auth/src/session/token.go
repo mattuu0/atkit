@@ -1,8 +1,8 @@
 package session
 
 import (
+	"auth/util"
 	"fmt"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -12,7 +12,7 @@ func GenToken(tokenid string) (string,error) {
 	// JWTに付与する構造体
 	claims := jwt.MapClaims{
 		"tokenid": tokenid,
-		"exp":     GetExp(), //有効期限
+		"exp":     util.GetExp(), //有効期限
 	}
 
 	// ヘッダーとペイロード生成
@@ -48,8 +48,4 @@ func VerifyToken(tokenString string) (string,error) {
 		//エラーを返す
 		return "",err
 	}
-}
-
-func GetExp() int64 {
-	return time.Now().AddDate(1, 0, 0).Unix()
 }

@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"auth/model"
@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Middleware() gin.HandlerFunc {
+func Auth_Middleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ctx.Set("success",false)
 		ctx.Set("user",model.User{})
