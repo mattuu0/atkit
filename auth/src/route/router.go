@@ -14,6 +14,13 @@ func GenRouter() *gin.Engine {
 	//HTMLを読み込む
 	router.LoadHTMLFiles("./htmls/oauth/oauth_error.html")
 
+	//oauth
+	oauth_group := router.Group("/oauth")
+	{
+		//Oauth認証
+		oauth_group.GET("/:provider", controller.Oauth)
+		oauth_group.GET("/:provider/callback", controller.Oauth_Callback)
+	}
 
 	//グループ作成
 	authed_group := router.Group("/authed")

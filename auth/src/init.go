@@ -2,7 +2,9 @@ package main
 
 import (
 	"auth/auth"
+	"auth/controller"
 	"auth/model"
+	"auth/service"
 	"auth/session"
 	"log"
 	"os"
@@ -34,4 +36,10 @@ func Init() {
 
 	//JWt 初期化
 	auth.Init()
+
+
+	//Oauth初期化
+	controller.Oauth_Init()
+
+	service.Init()
 }

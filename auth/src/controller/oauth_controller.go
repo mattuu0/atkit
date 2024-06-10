@@ -18,6 +18,8 @@ import (
 )
 
 func Oauth_Init() {
+	log.Println("Oauth_Init")
+	
 	goth.UseProviders(
 		google.New(os.Getenv("Google_KEY"), os.Getenv("Google_SECRET"), os.Getenv("Google_CALLBACK_URL"), "email", "profile"),
 		discord.New(os.Getenv("DISCORD_KEY"), os.Getenv("DISCORD_SECRET"), os.Getenv("DISCORD_CALLBACK_URL"), "identify", "email"),
