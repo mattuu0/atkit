@@ -2,7 +2,7 @@ package main
 
 import (
 	"auth/auth"
-	"auth/database"
+	"auth/model"
 	"auth/oauth"
 	"auth/session"
 	"log"
@@ -33,6 +33,7 @@ func ServerMain() {
 			"message": "pong",
 		})
 	})
+	
 
 	//グループ作成
 	authed_group := router.Group("/authed")
@@ -42,7 +43,7 @@ func ServerMain() {
 
 		authed_group.GET("/GetUser", func(ctx *gin.Context) {
 			//ユーザー取得
-			ctx.JSON(http.StatusOK, ctx.MustGet("user").(database.User))
+			ctx.JSON(http.StatusOK, ctx.MustGet("user").(model.User))
 		})
 
 		//ログアウト
@@ -51,7 +52,7 @@ func ServerMain() {
 			now_session,_ := ctx.Get("session")
 
 			//セッション削除
-			err := session.DeleteSession(now_session.(*database.Session).SessionID)
+			err := model.DeleteSession(now_session.(*model.Session).SessionID)
 
 			//エラー処理
 			if err != nil {
@@ -72,7 +73,7 @@ func ServerMain() {
 			now_session,_ := ctx.Get("session")
 
 			//セッション更新
-			update_token,err := session.UpdateSession(now_session.(*database.Session).TokenID,ctx.Request.UserAgent(),ctx.ClientIP())
+			update_token,err := session.UpdateSession(now_session.(*model.Session).TokenID,ctx.Request.UserAgent(),ctx.ClientIP())
 
 			//エラー処理
 			if err != nil {
@@ -96,7 +97,7 @@ func ServerMain() {
 			now_session,_ := ctx.Get("session")
 
 			//セッション更新
-			err := session.SubmitUpdate(now_session.(*database.Session).TokenID,ctx.Request.UserAgent(),ctx.ClientIP())
+			err := session.SubmitUpdate(now_session.(*model.Session).TokenID,ctx.Request.UserAgent(),ctx.ClientIP())
 
 			//エラー処理
 			if err != nil {
@@ -117,7 +118,7 @@ func ServerMain() {
 			user,_ := ctx.Get("user")
 
 			//トークン作成
-			atoken,err := auth.GenAccessToken(user.(database.User).UserID)
+			atoken,err := auth.GenAccessToken(user.(model.User).UserID)
 
 			//エラー処理
 			if err != nil {
@@ -139,7 +140,7 @@ func ServerMain() {
 		//アイコンを取得するエンドポイント
 		uicon_group.GET("/:userid",func(ctx *gin.Context) {
 			//ユーザー取得
-			user,err := database.GetUserByID(ctx.Param("userid"))
+			user,err := model.GetUserByID(ctx.Param("userid"))
 	
 			//エラー処理
 			if err != nil {
@@ -156,7 +157,7 @@ func ServerMain() {
 		//アイコンを更新するエンドポイント
 		uicon_group.POST("/upicon",Middleware(),func(ctx *gin.Context) {
 			//ユーザー取得
-			user,_ := ctx.MustGet("user").(database.User)
+			user,_ := ctx.MustGet("user").(model.User)
 
 			//アイコン取得
 			icon_file, err := ctx.FormFile("icon")
@@ -198,20 +199,17 @@ func ServerMain() {
 				return
 			}
 
-			//データーベース
-			dbconn := database.GetConn()
-
 			//ユーザーを取得
 			user.IconPath = savepath
 			
 			//ユーザー更新
-			result := dbconn.Save(&user)
+			err = model.UpdateUser(&user)
 
 			//エラー処理
-			if result.Error != nil {
-				log.Println(result.Error)
+			if err != nil {
+				log.Println(err)
 				ctx.HTML(http.StatusBadRequest, "oauth/oauth_error.html", gin.H{
-					"error_log": result.Error.Error(),
+					"error_log": err.Error(),
 				})
 				return
 			}

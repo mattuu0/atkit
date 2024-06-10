@@ -10,7 +10,7 @@ func main() {
 
 	Init()
 	//セッション作成
-	first_token, _ := GetSession("aiueo", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.142.86 Safari/537.36", "127.0.0.1")
+	first_token, _ := GenSession("aiueo", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.142.86 Safari/537.36", "127.0.0.1")
 
 	log.Println(first_token)
 

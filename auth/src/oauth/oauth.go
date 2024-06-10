@@ -1,7 +1,7 @@
 package oauth
 
 import (
-	"auth/database"
+	"auth/model"
 	"auth/session"
 	"context"
 	"log"
@@ -56,9 +56,6 @@ func Oauth_Setup(router *gin.Engine) {
 			//認証を完了する
 			user, err := gothic.CompleteUserAuth(ctx.Writer, ctx.Request)
 
-			//データベース
-			dbconn := database.GetConn()
-
 			//エラー処理
 			if err != nil {
 				log.Println(ctx.Writer, err)
@@ -69,11 +66,11 @@ func Oauth_Setup(router *gin.Engine) {
 			}
 
 			//ユーザーを取得する
-			usr, err := database.GetUser(user.Provider, user.UserID)
+			usr, err := model.GetUser(user.Provider, user.UserID)
 
 			if err == gorm.ErrRecordNotFound {
 				//見つからないときユーザーを作成する
-				err := database.CreateUser(database.User{
+				err := model.CreateUser(model.User{
 					UserID:      user.UserID,
 					Provider:    user.Provider,
 					UserName:    user.Name,
@@ -94,7 +91,7 @@ func Oauth_Setup(router *gin.Engine) {
 				}
 
 				//ユーザーを取得
-				get_usr, err := database.GetUser(user.Provider, user.UserID)
+				get_usr, err := model.GetUser(user.Provider, user.UserID)
 
 				//エラー処理
 				if err != nil {
@@ -125,13 +122,13 @@ func Oauth_Setup(router *gin.Engine) {
 					get_usr.IconPath = iconpath
 
 					//ユーザーを更新
-					result := dbconn.Save(&get_usr)
+					err = model.UpdateUser(get_usr)
 
 					//エラー処理
-					if result.Error != nil {
-						log.Println(ctx.Writer, result.Error)
+					if err != nil {
+						log.Println(err)
 						ctx.HTML(http.StatusInternalServerError, "oauth_error.html", gin.H{
-							"error_log": result.Error.Error(),
+							"error_log": err.Error(),
 						})
 						return
 					}
@@ -168,11 +165,11 @@ func Oauth_Setup(router *gin.Engine) {
 			}
 
 			//セッションを作成する
-			session_token, err := session.GetSession(usr.UserID, ctx.Request.UserAgent(), ctx.ClientIP())
+			session_token, err := session.GenSession(usr.UserID, ctx.Request.UserAgent(), ctx.ClientIP())
 
 			//エラー処理
 			if err != nil {
-				log.Println(ctx.Writer, err)
+				log.Println(err)
 				ctx.HTML(http.StatusInternalServerError, "oauth_error.html", gin.H{
 					"error_log": err.Error(),
 				})

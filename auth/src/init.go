@@ -2,7 +2,7 @@ package main
 
 import (
 	"auth/auth"
-	"auth/database"
+	"auth/model"
 	"auth/session"
 	"log"
 
@@ -26,7 +26,7 @@ func Init() {
 	loadEnv()
 
 	// データベース接続
-	database.Init()
+	model.Init()
 
 	// セッション初期化
 	session.Init()

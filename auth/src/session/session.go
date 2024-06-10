@@ -1,7 +1,7 @@
 package session
 
 import (
-	"auth/database"
+	"auth/model"
 	"errors"
 	"log"
 	"os"
@@ -20,7 +20,7 @@ var (
 
 func Init() {
 	//データベース接続
-	database.Init()
+	model.Init()
 
 	//JWT鍵の読み込み
 	JwtSecret = os.Getenv("JWT_SECRET")
@@ -35,29 +35,23 @@ func Init() {
 }
 
 func Remove_Expired_Session() {
-	//データベース接続
-	dbconn := database.GetConn()
-
 	//古いセッション取得
 	for {
 		//3秒待機
 		time.Sleep(time.Second * 3)
 
-		sessions := []database.Session{}
-
-		//db検索
-		result := dbconn.Where("exp < ?", time.Now().Unix()).Find(&sessions)
+		//古いセッションを取得
+		sessions, err := model.GetExperiedSession(noexp)
 
 		//エラー処理
-		if result.Error != nil {
-			log.Println(result.Error)
+		if err != nil {
+			log.Println(err)
 			continue
 		}
+		
 
 		//古いセッションを削除
 		for _, session := range sessions {
-			log.Println(session.Exp)
-
 			//有効期限が設定されていないとき
 			if session.Exp == noexp {
 				continue
@@ -66,7 +60,7 @@ func Remove_Expired_Session() {
 			//アクセストークンの場合
 			if session.Type == "access" {
 				//セッション取得
-				get_session, err := GetSessionByTokenID(session.UpdateID)
+				get_session, err := model.GetSessionByTokenID(session.UpdateID)
 
 				//エラー処理
 				if err != nil {
@@ -75,11 +69,11 @@ func Remove_Expired_Session() {
 				}
 
 				//セッション削除
-				result = dbconn.Unscoped().Delete(&get_session)
+				err = model.DeleteSession(get_session.SessionID)
 
 				//エラー処理
-				if result.Error != nil {
-					log.Println(result.Error)
+				if err != nil {
+					log.Println(err)
 					continue
 				}
 
@@ -87,7 +81,7 @@ func Remove_Expired_Session() {
 			}
 
 			//更新元セッション取得
-			old_session, err := GetSessionByTokenID(session.UpdateID)
+			old_session, err := model.GetSessionByTokenID(session.UpdateID)
 
 			//エラー処理
 			if err == nil {
@@ -97,35 +91,32 @@ func Remove_Expired_Session() {
 				old_session.IsUpdating = false
 
 				//更新
-				result := dbconn.Save(&old_session)
+				err := model.UpdateSession(old_session)
 
 				//エラー処理
-				if result.Error != nil {
-					log.Println(result.Error)
+				if err != nil {
+					log.Println(err)
 					continue
 				}
-			} else if err != nil {
+
+			} else {
 				log.Println(err)
 			}
 
 			//セッション削除
-			result = dbconn.Unscoped().Delete(&session)
+			err = model.DeleteSession(session.SessionID)
 
 			//エラー処理
-			if result.Error != nil {
-				log.Println(result.Error)
+			if err != nil {
+				log.Println(err)
 				continue
 			}
 		}
-
 	}
 }
 
 // セッションを作成する (トークンを返す)
-func GetSession(bindid string, useragent string, ipaddr string) (string, error) {
-	//データベース接続
-	dbconn := database.GetConn()
-
+func GenSession(bindid string, useragent string, ipaddr string) (string, error) {
 	//トークンID生成
 	tokenid := GenID()
 
@@ -141,7 +132,7 @@ func GetSession(bindid string, useragent string, ipaddr string) (string, error) 
 	SessionID := GenID()
 
 	//セッション作成
-	session_data := database.Session{
+	session_data := model.Session{
 		SessionID:  SessionID,
 		UserID:     bindid,
 		TokenID:    tokenid,
@@ -152,11 +143,11 @@ func GetSession(bindid string, useragent string, ipaddr string) (string, error) 
 	}
 
 	//セッション作成
-	result := dbconn.Create(&session_data)
+	err = model.CreateSession(&session_data)
 
 	//エラー処理
-	if result.Error != nil {
-		return "", result.Error
+	if err != nil {
+		return "", err
 	}
 
 	return stoken, nil
@@ -165,11 +156,8 @@ func GetSession(bindid string, useragent string, ipaddr string) (string, error) 
 // 更新用のトークンを返す
 // セッションを更新する
 func UpdateSession(tokenid string, useragent string, ipaddr string) (string, error) {
-	//データベース接続
-	//dbconn := database.GetConn()
-
 	//セッション取得
-	session, err := GetSessionByTokenID(tokenid)
+	session, err := model.GetSessionByTokenID(tokenid)
 
 	//エラー処理
 	if err != nil {
@@ -197,14 +185,11 @@ func UpdateSession(tokenid string, useragent string, ipaddr string) (string, err
 	}
 
 	//更新用セッション作成
-	//データベース接続
-	dbconn := database.GetConn()
-
 	//セッションID取得
 	SessionID := GenID()
 
 	//セッション作成 (有効期限 5分)
-	session_data := database.Session{
+	session_data := model.Session{
 		SessionID:  SessionID,
 		UserID:     session.UserID,
 		TokenID:    new_tokenid,
@@ -217,22 +202,22 @@ func UpdateSession(tokenid string, useragent string, ipaddr string) (string, err
 	}
 
 	//セッション作成
-	result := dbconn.Create(&session_data)
+	err = model.CreateSession(&session_data)
 
 	//エラー処理
-	if result.Error != nil {
-		return "", result.Error
+	if err != nil {
+		return "", err
 	}
 
 	//古いセッションを更新中にする
 	session.IsUpdating = true
 
 	//更新する
-	result = dbconn.Save(&session)
+	err = model.UpdateSession(session)
 
 	//エラー処理
-	if result.Error != nil {
-		return "", result.Error
+	if err != nil {
+		return "", err
 	}
 
 	return new_token, nil
@@ -240,11 +225,8 @@ func UpdateSession(tokenid string, useragent string, ipaddr string) (string, err
 
 // 更新を確定する関数
 func SubmitUpdate(tokenid string, useragent string, ipaddr string) error {
-	//データベース接続
-	dbconn := database.GetConn()
-
 	//新しいセッション取得
-	new_session, err := GetSessionByTokenID(tokenid)
+	new_session, err := model.GetSessionByTokenID(tokenid)
 
 	//エラー処理
 	if err != nil {
@@ -252,7 +234,7 @@ func SubmitUpdate(tokenid string, useragent string, ipaddr string) error {
 	}
 
 	//古いセッション取得
-	old_session, err := GetSessionByTokenID(new_session.UpdateID)
+	old_session, err := model.GetSessionByTokenID(new_session.UpdateID)
 
 	//エラー処理
 	if err != nil {
@@ -265,11 +247,11 @@ func SubmitUpdate(tokenid string, useragent string, ipaddr string) error {
 	}
 
 	//古いセッションを削除する
-	result := dbconn.Unscoped().Delete(&old_session)
+	err = model.DeleteSession(old_session.SessionID)
 
 	//エラー処理
-	if result.Error != nil {
-		return result.Error
+	if err != nil {
+		return err
 	}
 
 	//新しいセッションを更新する
@@ -280,49 +262,11 @@ func SubmitUpdate(tokenid string, useragent string, ipaddr string) error {
 	new_session.Exp = GetExp()
 
 	//更新する
-	result = dbconn.Save(&new_session)
+	err = model.UpdateSession(new_session)
 
 	//エラー処理
-	if result.Error != nil {
-		return result.Error
-	}
-
-	return nil
-}
-
-// セッション取得
-func GetSessionByTokenID(tokenid string) (*database.Session, error) {
-	//データベース接続
-	dbconn := database.GetConn()
-
-	//セッション取得
-	var session database.Session
-
-	//セッション取得
-	result := dbconn.Where(database.Session{
-		TokenID: tokenid,
-	}).First(&session)
-
-	//エラー処理
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	return &session, nil
-}
-
-// セッション削除
-func DeleteSession(sessionid string) error {
-	//データベース接続
-	dbconn := database.GetConn()
-
-	result := dbconn.Where(database.Session{
-		SessionID: sessionid,
-	}).Unscoped().Delete(&database.Session{})
-
-	//エラー処理
-	if result.Error != nil {
-		return result.Error
+	if err != nil {
+		return err
 	}
 
 	return nil

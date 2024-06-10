@@ -1,7 +1,7 @@
 package main
 
 import (
-	"auth/database"
+	"auth/model"
 	"auth/session"
 	"net/http"
 
@@ -11,8 +11,8 @@ import (
 func Middleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ctx.Set("success",false)
-		ctx.Set("user",database.User{})
-		ctx.Set("session",database.Session{})
+		ctx.Set("user",model.User{})
+		ctx.Set("session",model.Session{})
 
 		//トークン取得
 		token,err := GetToken(ctx)
@@ -39,7 +39,7 @@ func Middleware() gin.HandlerFunc {
 		}
 
 		//セッションを取得する
-		get_session,err := session.GetSessionByTokenID(tokenid)
+		get_session,err := model.GetSessionByTokenID(tokenid)
 
 		//エラー処理
 		if err != nil {
@@ -48,7 +48,7 @@ func Middleware() gin.HandlerFunc {
 		}
 
 		//ユーザーを取得する
-		get_user,err := database.GetUserByID(get_session.UserID)
+		get_user,err := model.GetUserByID(get_session.UserID)
 
 		//エラー処理
 		if err != nil {

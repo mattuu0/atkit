@@ -1,4 +1,4 @@
-package database
+package model
 
 import (
 	"github.com/google/uuid"
@@ -93,4 +93,15 @@ func GetUserByID(uid string) (*User,error) {
 	}
 
 	return &user,nil
+}
+
+//ユーザーを更新する関数
+func UpdateUser(user *User) error {
+	//データベース接続
+	dbconn := GetConn()
+
+	//ユーザー保存
+	result := dbconn.Save(user)
+
+	return result.Error
 }
