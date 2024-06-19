@@ -1,29 +1,30 @@
 services:
-    auth:
+    atkit_auth:
+        container_name: atkit
         build: ./auth
         volumes:
-            - ./auth/src:/root/share
+            - ./auth/src:/root/atkit
         tty: true
         restart: always
-    app:
+    atkit_app:
+        container_name: app
         build: ./app
         volumes:
             - ./app/src:/root/app
         tty: true
         restart: always
-    nginx:
+    atkit_nginx:
         restart: always
         image: nginx:latest
-        container_name: nginx
         ports:
-            - "8447:80"
+            - "8445:80"
         volumes:
             # NGINXのコンフィグファイルをホストOSから、ゲストOSに連結する
             - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
             - ./nginx/keys:/etc/nginx/keys
             - ./nginx/statics:/etc/nginx/static/statics
         tty: true
-    redis:
+    atkit_redis:
         image: "redis:latest"
         ports:
             - "6379:6379"

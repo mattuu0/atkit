@@ -9,17 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//ユーザー取得
+// ユーザー取得
 func GetUser(ctx *gin.Context) {
 	//ユーザー取得
 	ctx.JSON(http.StatusOK, ctx.MustGet("user").(model.User))
 }
 
-
-//アイコン取得
+// アイコン取得
 func GetIcon(ctx *gin.Context) {
 	//ユーザー取得
-	user,err := service.GetUser(ctx.Param("userid"))
+	user, err := service.GetUser(ctx.Param("userid"))
 
 	//エラー処理
 	if err != nil {
@@ -33,29 +32,29 @@ func GetIcon(ctx *gin.Context) {
 	ctx.File(user.IconPath)
 }
 
-//アイコンアップロード
+// アイコンアップロード
 func UploadIcon(ctx *gin.Context) {
 	//ユーザー取得
-	user,_ := ctx.MustGet("user").(model.User)
+	user, _ := ctx.MustGet("user").(model.User)
 
 	//アイコン取得
 	icon_file, err := ctx.FormFile("icon")
 	if err != nil {
 		log.Println(err)
 
-		ctx.HTML(http.StatusBadRequest, "oauth/oauth_error.html", gin.H{
+		ctx.HTML(http.StatusBadRequest, "oauth/error.html", gin.H{
 			"error_log": err.Error(),
 		})
 		return
 	}
 
 	//アイコンをアップロード
-	err = service.UploadIcon(user.UserID,icon_file)
+	err = service.UploadIcon(user.UserID, icon_file)
 
 	//エラー処理
 	if err != nil {
 		log.Println(err)
-		ctx.HTML(http.StatusBadRequest, "oauth/oauth_error.html", gin.H{
+		ctx.HTML(http.StatusBadRequest, "oauth/error.html", gin.H{
 			"error_log": err.Error(),
 		})
 		return

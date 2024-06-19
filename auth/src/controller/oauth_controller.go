@@ -19,7 +19,7 @@ import (
 
 func Oauth_Init() {
 	log.Println("Oauth_Init")
-	
+
 	goth.UseProviders(
 		google.New(os.Getenv("Google_KEY"), os.Getenv("Google_SECRET"), os.Getenv("Google_CALLBACK_URL"), "email", "profile"),
 		discord.New(os.Getenv("DISCORD_KEY"), os.Getenv("DISCORD_SECRET"), os.Getenv("DISCORD_CALLBACK_URL"), "identify", "email"),
@@ -27,7 +27,7 @@ func Oauth_Init() {
 	)
 }
 
-//Oauth 認証 開始
+// Oauth 認証 開始
 func Oauth(ctx *gin.Context) {
 	provider := ctx.Param("provider")
 	ctx.Request = contextWithProviderName(ctx, provider)
@@ -46,19 +46,19 @@ func Oauth_Callback(ctx *gin.Context) {
 	//エラー処理
 	if err != nil {
 		log.Println(ctx.Writer, err)
-		ctx.HTML(http.StatusInternalServerError, "oauth_error.html", gin.H{
+		ctx.HTML(http.StatusInternalServerError, "error.html", gin.H{
 			"error_log": err.Error(),
 		})
 		return
 	}
 
 	//サービスに引き渡す
-	session_token,err := service.Callback_Oauth(user, ctx.Request.UserAgent(), ctx.ClientIP())
-	
+	session_token, err := service.Callback_Oauth(user, ctx.Request.UserAgent(), ctx.ClientIP())
+
 	//エラー処理
 	if err != nil {
 		log.Println(ctx.Writer, err)
-		ctx.HTML(http.StatusInternalServerError, "oauth_error.html", gin.H{
+		ctx.HTML(http.StatusInternalServerError, "error.html", gin.H{
 			"error_log": err.Error(),
 		})
 		return
