@@ -2,6 +2,7 @@ package model
 
 import (
 	"log"
+	"os"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -14,7 +15,7 @@ var (
 
 func Init() {
 	//データベース接続
-	dbconn,err := gorm.Open(sqlite.Open("test.db"),&gorm.Config{})
+	dbconn,err := gorm.Open(sqlite.Open(os.Getenv("DB_PATH")),&gorm.Config{})
 
 	//エラー処理
 	if err != nil {

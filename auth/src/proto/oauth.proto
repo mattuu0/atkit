@@ -1,0 +1,12 @@
+syntax = "proto3";
+package sdk_grpc;
+
+option go_package = "../sdk/sgrpc";
+
+message Message {
+  string body = 1;
+}
+
+service SampleService {
+    rpc GetData(Message) returns (Message) {}
+}
